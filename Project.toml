@@ -1,0 +1,7 @@
+[deps]
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+MPIClusterManagers = "e7922434-ae4b-11e9-05c5-9780451d2c66"
+MPIPreferences = "3da0fdf6-3ccc-4f1b-acd9-58baa6c99267"
+ParallelStencil = "94395366-693c-11ea-3b26-d9b7aac5d958"
+PencilArrays = "0e08944d-e94e-41b1-9406-dcf66b6a9d2e"
+Remark = "79b45036-8e38-5d04-8f49-b9fb23ff5a0d"
