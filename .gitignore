@@ -2,3 +2,6 @@ examples/.ipynb_checkpoints
 Manifest.toml
 presentation/build
 examples/julia-parallelstencil-grayscott.ipynb
+examples/05-deposition.ipynb
+examples/06-distributed.ipynb
+*.swp
