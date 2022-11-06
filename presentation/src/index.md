@@ -87,6 +87,27 @@ In your batch scripts, it is recommended to add a precompilation step
 
 ---
 
+# MPIClusterManager.j
+
+```julia
+using MPIClusterManagers # to import MPIManager
+using Distributed # need to also import Distributed to use addprocs()
+
+# specify, number of mpi workers, launch cmd, etc.
+manager=MPIManager(np=4)
+
+# start mpi workers and add them as julia workers too.
+addprocs(manager)
+
+@mpi_do manager begin
+  using MPI
+  comm=MPI.COMM_WORLD
+  println("Hello world, I am $(MPI.Comm_rank(comm)) of $(MPI.Comm_size(comm))")
+end
+```
+
+---
+
 # Maxwell solver in two dimensions with FDTD scheme
 
 ```math
