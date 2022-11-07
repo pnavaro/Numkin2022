@@ -1,26 +1,32 @@
-# Threads example
+# Some Julia tools for HPC
 
-Discretized Laplace operator, two-dimensional implementation with finite-differences:
 
-```julia
-function laplace2d!(u, unew)
-    nx, ny = size(u)
-    for j in 2:ny-1
-        for i in 2:nx-1
-            @inbounds unew[i,j] = 0.25 * (u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1])
-        end
-    end
-end
+Pierre Navaro - IRMAR (Institut de Recherche Mathématique de Rennes) 
 
-u = zeros( 4096, 4096)
-# set boundary conditions
-u[begin,:] = u[end,:] = u[:,1] = u[:,end] .= 10.0
-unew = copy(u)
-```
+## Who am I ?
+
+ - Scientific computing engineer
+
+ - **Fortran 77 + PVM** : during my PhD 1998-2002 (Université du Havre)
+
+ - **Fortran 90-2003 + OpenMP-MPI** : Engineer in Strasbourg (2003-2015) at IRMA
+
+ - **Numpy + Cython, R + Rcpp** : Engineer in Rennes (2015-now) at IRMAR
+
+ - **Julia v1.0** since July 2018
+
+
+ https://github.com/JuliaVlasov/Numkin2019
+
+ https://github.com/JuliaVlasov/Numkin2022
+
+
+# Threads 
+
 
 ---
 
-# MPI Installation
+# MPI 
 
 Just `add MPI` in `pkg` mode and it will install the `MPI.jl`package + the MPI library by default.
 You can use an existing installation. There is a package called `MPIPreferences`
@@ -44,7 +50,7 @@ julia --project -e 'using MPIPreferences; MPIPreferences.use_system_binary()'
 
 ---
 
-# Requirements
+# MPI Requirements
 
 MPI.jl requires a shared library installation of a C MPI library,
 supporting the MPI 3.0 standard or later. The following MPI
@@ -248,13 +254,43 @@ summary(parent(u))  # arr
 ```
 
 
-# Fortran vs Julia
+---
 
-https://pnavaro.github.io/fortran-vs-julia/
+## Global grid
 
-A Cheatsheet for Fortran 2008 Syntax: Comparison with Julia.
+```julia
+Nx, Ny, Nz = (33, 9, 17); comm = MPI.COMM_WORLD
+pen = Pencil((Nx, Ny, Nz), comm)
+xs_global = range(-1, 1; length = Nx)
+ys_global = range( 0, 1; length = Ny)
+zs_global = range( 0, 2; length = Nz)
+```
+
+## Local grid
+
+```julia
+grid = localgrid(pen, (xs_global, ys_global, zs_global));
+u = PencilArray{Float64}(undef, pen);
+@. u = sin(grid.x) * cos(grid.y) * cos(grid.z);
+```
+
+```julia
+for I ∈ eachindex(grid)
+    x, y, z = grid[I]
+    u[I] = sin(x) * cos(y) * cos(z)
+endo
+```
 
 ---
+
+PencilArrays.jl provides a generic and zero-overhead interface to dimension permutations.
+-  allows to easily switch between regular and distributed arrays
+- indices are permuted at compile time
+- iteration is performed in memory order
+
+---
+
+
 
 # Gray-Scott system
 
@@ -590,4 +626,13 @@ Takes only 0.3 secs on Tesla v100
     + Syntax very close to the math
     + [Poisson 1d example](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/Poisson1DTests.jl)
 
-- [PartitionedArrays.jl](https://github.com/fverdugo/PartitionedArrays.jl): Julia alternative to PETSc that allows intercative developping 
+- [PartitionedArrays.jl](https://github.com/fverdugo/PartitionedArrays.jl): Julia alternative to PETSc that allows interative developping 
+
+---
+
+# Fortran vs Julia
+
+https://pnavaro.github.io/fortran-vs-julia/
+
+A Cheatsheet for Fortran 2008 Syntax: Comparison with Julia.
+
