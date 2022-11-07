@@ -1,11 +1,12 @@
 name: slides
+
 on:
   push:
     branches:
       - main
 
 jobs:
-  deploy-book:
+  slides:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -15,7 +16,7 @@ jobs:
         julia --project -e 'import Pkg; Pkg.update(); Pkg.instantiate()'
     - name: Build the slides
       run: |
-        julia --project presentation/make.jl
+        julia --project presentation/build.jl
     - name: GitHub Pages action
       uses: peaceiris/actions-gh-pages@v3.6.1
       with:
