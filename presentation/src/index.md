@@ -27,11 +27,11 @@ Pierre Navaro - IRMAR (Institut de Recherche Mathématique de Rennes)
 ## Solution to the "two-language problem"
 
 Single code for prototyping and production
-- Simple and high-level ``\Rightarrow``low developpement cost
+- Simple and high-level ``\Rightarrow`` low developpement cost
 - Fast like C or Fortran
 - No need of a compilation tool like CMake
 - Very easy to package and manage dependencies.
-- UTF8 and metaprogramming allows syntax close to the math.
+- UTF8 and metaprogramming allow high-level syntax very close to the math.
 Backend agnostic:
 - Single code to run on single CPU or thousands of GPUs
 - Single code to run on various CPUs and GPUs.
