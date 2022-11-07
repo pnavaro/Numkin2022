@@ -1,0 +1,24 @@
+ name: deploy
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  deploy-book:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        julia --project -e 'import Pkg; Pkg.update(); Pkg.instantiate()'
+    - name: Build the slides
+      run: |
+        julia --project presentation/make.jl
+    - name: GitHub Pages action
+      uses: peaceiris/actions-gh-pages@v3.6.1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./presentation/build/
