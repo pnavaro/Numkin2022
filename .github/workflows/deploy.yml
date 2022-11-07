@@ -1,9 +1,8 @@
- name: deploy
-
+name: slides
 on:
   push:
     branches:
-    - main
+      - main
 
 jobs:
   deploy-book:
