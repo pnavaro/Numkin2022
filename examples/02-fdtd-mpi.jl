@@ -63,6 +63,51 @@ function ampere_maxwell!( fields, dt )
 
 end 
 
+function plot_fields(mesh, rank, proc, field, xp, yp, iplot )
+
+    dx, dy = mesh.dx, mesh.dy
+    ix, jx = 1, mesh.nx
+    iy, jy = 1, mesh.ny
+
+    if iplot == 1
+        mkpath("data/$rank")
+    end
+
+    io = open("data/$(rank)/$(iplot)", "w")
+    for j=iy:jy
+        for i=ix:jx
+            @printf( io, "%f %f %f \n", xp+(i-0.5)*dx, yp+(j-1)*dy, field[i,j])
+        end
+        @printf( io, "\n")
+    end
+    close(io)
+   
+    # write master file
+
+    if rank == 0
+
+      if iplot == 1 
+         io = open( "bz.gnu", "w" )
+         write(io, "set zr[-1.1:1.1]\n")
+         write(io, "set surf\n")
+      else
+         io = open( "bz.gnu", "a" )
+      end
+      write(io, "set title '$(iplot)' \n")
+      write(io, "splot 'data/$(rank)/$(iplot)' w l")
+   
+      for p = 1:proc-1
+         write(io, ", 'data/$(p)/$(iplot)' w l")
+      end
+      write( io, "\n")
+
+      close(io)
+
+    end
+
+end 
+
+
 function main( nstep )
 
     cfl    = 0.4    # Courant-Friedrich-Levy
@@ -70,8 +115,8 @@ function main( nstep )
     nstepmax = 1000 # max steps
     md = 2          # md : wave number x (initial condition)
     nd = 2          # nd : wave number y (initial condition)
-    nx = 1200       # x number of points
-    ny = 1200       # y number of points
+    nx = 120        # x number of points
+    ny = 120        # y number of points
     dx = 0.01       # width
     dy = 0.01       # height
     dimx = nx * dx
@@ -157,6 +202,8 @@ function main( nstep )
        # Send to South and receive from North
        MPI.Sendrecv!(view(fields.ey, mx+1, :), south, tag,
                      view(fields.ey,    1, :), north, tag, comm2d)
+
+       plot_fields(mesh, rank, proc, fields.bz, xp, yp, istep )
     
     end # next time step
     
@@ -200,6 +247,8 @@ tend = MPI.Wtime()
 if MPI.Comm_rank(MPI.COMM_WORLD) == 0
    println(" error : $(err_l2) ")
    println(" time : $(tend -tbegin) ")
+   println(" Plot the bz field evolution with <<gnuplot bz.gnu>> ")
 end
 
 MPI.Finalize()
+
