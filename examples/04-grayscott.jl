@@ -1,143 +1,165 @@
-using Pkg
-Pkg.activate(@__DIR__)
-Pkg.resolve()
-Pkg.instantiate()
-Pkg.status()
+using BenchmarkTools
+using Plots
+using ProgressMeter
 
-# And add the package(s) we will use
+const Dᵤ = .1
+const Dᵥ = .05
+const F = 0.0545
+const k = 0.062
 
-using Plots, CUDA, BenchmarkTools
-
-# ### 1. Array programming on CPU
-
-# +
-function grayscott(; n=300, maxiter = 5000)
-
-    # parameters
-    Dᵤ, Dᵥ = .1, .05
-    F, k = 0.0545, 0.062
-
+function init(n)
+ 
     u = ones((n+2,n+2))
     v = zeros((n+2,n+2))
-
+    
     x, y = LinRange(0, 1, n+2), LinRange(0, 1, n+2)
 
     for j in eachindex(y), i in eachindex(x)
         if (0.4<x[i]) && (x[i]<0.6) && (0.4<y[j]) && (y[j]<0.6)
+    
             u[i,j] = 0.50
             v[i,j] = 0.25
         end
     end
-    
-    Δu = zeros(n, n)
-    Δv = zeros(n, n)
-    uvv = zeros(n,n)
-    
-    options = (aspect_ratio = :equal, axis = nothing, 
-        legend = :none, framestyle = :none)
-
-    @gif for t in 1:maxiter
         
-            @views Δu .= u[1:end-2,2:end-1] .+ u[2:end-1,1:end-2] .+ u[2:end-1, 3:end] .+ u[3:end,2:end-1] .- 4*u[2:end-1, 2:end-1]
-            @views Δv .= v[1:end-2,2:end-1] .+ v[2:end-1,1:end-2] .+ v[2:end-1, 3:end] .+ v[3:end,2:end-1] .- 4*v[2:end-1, 2:end-1]
-            @views uvv .= u[2:end-1,2:end-1] .* v[2:end-1,2:end-1] .* v[2:end-1,2:end-1]
-            @views u[2:end-1,2:end-1] .+=  Dᵤ .* Δu .- uvv .+ F * (1 .- u[2:end-1,2:end-1])
-            @views v[2:end-1,2:end-1] .+=  Dᵥ .* Δv .+ uvv .- (F + k) .* v[2:end-1,2:end-1]
-         
-            heatmap(v; options...)
+    return u, v
+end
 
-    end every 100
+
+function grayscott!( u, v, Δu, Δv)
+
+    n = size(Δu,1)
+
+    for c = 1:n
+        c1 = c + 1
+        c2 = c + 2
+        for r = 1:n
+            r1 = r + 1
+            r2 = r + 2
+            @inbounds Δu[r,c] = u[r1,c2] + u[r1,c] + u[r2,c1] + u[r,c1] - 4*u[r1,c1]
+            @inbounds Δv[r,c] = v[r1,c2] + v[r1,c] + v[r2,c1] + v[r,c1] - 4*v[r1,c1]
+        end
+    end
+
+    for c = 1:n
+        c1 = c + 1
+        for r = 1:n
+            r1 = r + 1  
+            @inbounds uvv = u[r1,c1]*v[r1,c1]*v[r1,c1]
+            @inbounds u[r1,c1] +=  Dᵤ * Δu[r,c] - uvv + F*(1 - u[r1,c1])
+            @inbounds v[r1,c1] +=  Dᵥ * Δv[r,c] + uvv - (F + k)*v[r1,c1]
+        end
+    end
 
 end
 
-@time grayscott()
+
+
+function run_simulation_loops( update_uv!, n, maxiter = 10_000)
+    u, v = init(n)
+    Δu = zeros(n, n)
+    Δv = zeros(n, n)
+    @showprogress 1 for t in 1:maxiter
+        update_uv!(u, v, Δu, Δv)
+    end
+    return u, v
+end
+
+@time u, v = run_simulation_loops(grayscott!, 500)
+
+# -
+
+using .Threads
+nthreads()
+
+# +
+function grayscott_threads!( u, v, Δu, Δv)
+
+    n = size(Δu,1)
+
+    @threads for c = 1:n
+        c1 = c + 1
+        c2 = c + 2
+        for r = 1:n
+            r1 = r + 1
+            r2 = r + 2
+            @inbounds Δu[r,c] = u[r1,c2] + u[r1,c] + u[r2,c1] + u[r,c1] - 4*u[r1,c1]
+            @inbounds Δv[r,c] = v[r1,c2] + v[r1,c] + v[r2,c1] + v[r,c1] - 4*v[r1,c1]
+        end
+    end
+
+    @threads for c = 1:n
+        c1 = c + 1
+        for r = 1:n
+            r1 = r + 1  
+            @inbounds uvv = u[r1,c1]*v[r1,c1]*v[r1,c1]
+            @inbounds u[r1,c1] +=  Dᵤ * Δu[r,c] - uvv + F*(1 - u[r1,c1])
+            @inbounds v[r1,c1] +=  Dᵥ * Δv[r,c] + uvv - (F + k)*v[r1,c1]
+        end
+    end
+
+end
+
+@time u, v = run_simulation_loops(grayscott_threads!, 500)
+
+# +
+function grayscott_vectorized!(u, v, Δu, Δv, uvv)
+        
+    @views Δu .= (u[1:end-2,2:end-1] .+ u[2:end-1,1:end-2] .+ u[2:end-1, 3:end] 
+            .+ u[3:end,2:end-1] .- 4 .* u[2:end-1, 2:end-1] )
+
+    @views Δv .= (v[1:end-2,2:end-1] .+ v[2:end-1,1:end-2] .+ v[2:end-1, 3:end] 
+            .+ v[3:end,2:end-1] .- 4 .* v[2:end-1, 2:end-1] )
+
+    @views uvv .= u[2:end-1,2:end-1] .* v[2:end-1,2:end-1] .* v[2:end-1,2:end-1]
+
+    @views u[2:end-1,2:end-1] .+=  Dᵤ .* Δu .- uvv .+ F * (1 .- u[2:end-1,2:end-1])
+
+    @views v[2:end-1,2:end-1] .+=  Dᵥ .* Δv .+ uvv .- (F + k) .* v[2:end-1,2:end-1]
+                 
+end
+
+
+# +
+function run_simulation_vectorized( n, maxiter = 10_000)
+    u, v = init(n)
+    Δu = zeros(n, n)
+    Δv = zeros(n, n)
+    uvv = zeros(n ,n )
+    @showprogress 1 for t in 1:maxiter
+        grayscott_vectorized!(u, v, Δu, Δv, uvv)
+    end
+    return u, v
+end
+
+@time u, v = run_simulation_vectorized(500)
+
 
 # +
 using CUDA
 
-function grayscott(; n=300, maxiter = 5000)
+function run_on_gpu( n = 500, maxiter = 10_000)
 
-    Dᵤ, Dᵥ = .1, .05
-    F, k = 0.0545, 0.062
+    u0, v0 = init(n)
 
-    u = CUDA.ones((n+2,n+2))
-    v = CUDA.zeros((n+2,n+2))
+    u = CuArray(u0)
+    v = CuArray(v0)
 
-    x, y = LinRange(0, 1, n+2), LinRange(0, 1, n+2)
-
-    for j in eachindex(y), i in eachindex(x)
-        if (0.4<x[i]) && (x[i]<0.6) && (0.4<y[j]) && (y[j]<0.6)
-            u[i,j] = 0.50
-            v[i,j] = 0.25
-        end
-    end
-    
     Δu = CUDA.zeros(n, n)
     Δv = CUDA.zeros(n, n)
     uvv = CUDA.zeros(n,n)
     
-    options = (aspect_ratio = :equal, axis = nothing, legend = :none, framestyle = :none)
-
-    @gif for t in 1:maxiter
+    for t in 1:maxiter
     
-        @views Δu .= u[1:end-2,2:end-1] .+ u[2:end-1,1:end-2] .+ u[2:end-1, 3:end] .+ u[3:end,2:end-1] .- 4*u[2:end-1, 2:end-1]
-        @views Δv .= v[1:end-2,2:end-1] .+ v[2:end-1,1:end-2] .+ v[2:end-1, 3:end] .+ v[3:end,2:end-1] .- 4*v[2:end-1, 2:end-1]
-        @views uvv .= u[2:end-1,2:end-1] .* v[2:end-1,2:end-1] .* v[2:end-1,2:end-1]
-        @views u[2:end-1,2:end-1] .+=  Dᵤ .* Δu .- uvv .+ F * (1 .- u[2:end-1,2:end-1])
-        @views v[2:end-1,2:end-1] .+=  Dᵥ .* Δv .+ uvv .- (F + k) .* v[2:end-1,2:end-1]
-         
-        heatmap(Array(v); options...)
+        grayscott_vectorized!(u, v, Δu, Δv, uvv)
 
-    end every 100
+    end
 
+    return Array(u), Array(v)
 
 end
 
-@time grayscott()
-# -
-
-# ### CPU vs GPU array programming performance
-#
-# For this, we can isolate the physics computation into a function that we will evaluate for benchmarking
-
-# +
-function update_uv!( u, v, Δu, Δv, uvv, Dᵤ, Dᵥ, F, k)
-    
-    @views Δu .= u[1:end-2,2:end-1] .+ u[2:end-1,1:end-2] .+ u[2:end-1, 3:end] .+ u[3:end,2:end-1] .- 4*u[2:end-1, 2:end-1]
-    @views Δv .= v[1:end-2,2:end-1] .+ v[2:end-1,1:end-2] .+ v[2:end-1, 3:end] .+ v[3:end,2:end-1] .- 4*v[2:end-1, 2:end-1]
-       
-    @views uvv .= u[2:end-1,2:end-1] .* v[2:end-1,2:end-1] .* v[2:end-1,2:end-1]
-    @views u[2:end-1,2:end-1] .+=  Dᵤ .* Δu .- uvv .+ F * (1 .- u[2:end-1,2:end-1])
-    @views v[2:end-1,2:end-1] .+=  Dᵥ .* Δv .+ uvv .- (F + k) .* v[2:end-1,2:end-1]
-    
-end
-# -
-
-Dᵤ, Dᵥ = .1, .05
-F, k = 0.0545, 0.062
-n = 2048
-u = rand(Float64, n+2, n+2)
-v = rand(Float64, n+2, n+2)
-Δu = zeros(n, n)
-Δv = zeros(n, n)
-uvv = zeros(n,n)
-t_it = @belapsed begin update_uv!($u, $v, $Δu, $Δv, $uvv, $Dᵤ, $Dᵥ, $F, $k); end
-T_eff_cpu = 23 * 1e-9 * n^2 * sizeof(Float64) / t_it
-println("T_eff = $(T_eff_cpu) GiB/s using CPU array programming")
-
-# Let's repeat the experiment using the GPU
-
-Dᵤ, Dᵥ = .1, .05
-F, k = 0.0545, 0.062
-n = 4096
-u = CUDA.rand(Float64, n+2, n+2)
-v = CUDA.rand(Float64, n+2, n+2)
-Δu = CUDA.zeros(n, n)
-Δv = CUDA.zeros(n, n)
-uvv = CUDA.zeros(n,n)
-t_it = @belapsed begin update_uv!($u, $v, $Δu, $Δv, $uvv, $Dᵤ, $Dᵥ, $F, $k); synchronize(); end
-T_eff_gpu = 23 * 1e-9 * n^2 * sizeof(Float64) / t_it
-println("T_eff = $(T_eff_gpu) GiB/s using GPU array programming")
+CUDA.@time u, v = run_on_gpu( 500)
 
 USE_GPU = true
 using ParallelStencil
@@ -149,18 +171,7 @@ else
     @init_parallel_stencil(Threads, Float64, 2)
 end
 
-Dᵤ, Dᵥ = .1, .05
-F, k = 0.0545, 0.062
-n = 2048
-u = @rand(n+2, n+2)
-v = @rand(n+2, n+2)
-Δu = @zeros( n, n)
-Δv = @zeros(n, n)
-uvv = @zeros( n,n);
-
-# Using math-close notations from the `FiniteDifferences2D` module, our update kernel can be re-written as following:
-
-@parallel function update_uv_ps!( u, v, Δu, Δv, uvv, Dᵤ, Dᵥ, F, k)
+@parallel function grayscott_ps!( u, v, Δu, Δv, uvv)
     
     @all(Δu) = @d2_xi(u) + @d2_yi(u)
     @all(Δv) = @d2_xi(u) + @d2_yi(v)
@@ -171,11 +182,25 @@ uvv = @zeros( n,n);
     return
 end
 
-?@inn
+function run_with_ps( n = 500, maxiter = 10_000)
 
-?@d2_xi
+    u0, v0 = init(n)
 
-t_it = @belapsed begin @parallel update_uv_ps!($u, $v, $Δu, $Δv, $uvv, $Dᵤ, $Dᵥ, $F, $k);  end
-T_eff_ps = 23 * 1e-9 * n^2 * sizeof(Float64)/t_it
-println("T_eff = $(T_eff_ps) GiB/s using ParallelStencil on GPU and the FiniteDifferences2D module")
+    u = Data.Array(v0)
+    v = Data.Array(v0)
 
+    Δu = @zeros(n, n)
+    Δv = @zeros(n, n)
+    uvv = @zeros(n,n)
+    
+    for t in 1:maxiter
+    
+        @parallel grayscott_ps!(u, v, Δu, Δv, uvv)
+
+    end
+    
+    u, v
+
+end
+
+@time run_with_ps(500)
