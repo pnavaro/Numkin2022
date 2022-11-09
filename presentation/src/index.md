@@ -645,18 +645,20 @@ Time of threaded (x16) version 10K steps with 500 x 500 points : 2.6 secs
 
 function grayscott_vectorized!(u, v, Δu, Δv, uvv)
 
-    @views Δu .= (u[1:end-2,2:end-1] .+ u[2:end-1,1:end-2] .+ u[2:end-1, 3:end] 
-                 .+ u[3:end,2:end-1] .- 4*u[2:end-1, 2:end-1] )
+    @views begin
+            
+        Δu .=(u[begin:end-2,2:end-1] .+ u[begin+1:end-1,1:end-2] .+ u[begin+1:end-1, begin+2:end] 
+           .+ u[begin+2:end,2:end-1] .- 4 .* u[begin+1:end-1, begin+1:end-1] )
 
-    @views Δv .= (v[1:end-2,2:end-1] .+ v[2:end-1,1:end-2] .+ v[2:end-1, 3:end] 
-                 .+ v[3:end,2:end-1] .- 4*v[2:end-1, 2:end-1] )
+        Δv .= (v[begin:end-2,2:end-1] .+ v[begin+1:end-1,1:end-2] .+ v[begin+1:end-1, begin+2:end] 
+           .+ v[begin+2:end,begin+1:end-1] .- 4 .* v[begin+1:end-1, begin+1:end-1] )
 
-    @views uvv .= u[2:end-1,2:end-1] .* v[2:end-1,2:end-1] .* v[2:end-1,2:end-1]
+        uvv .= u[begin+1:end-1,begin+1:end-1] .* v[begin+1:end-1,begin+1:end-1] .* v[begin+1:end-1,begin+1:end-1]
 
-    @views u[2:end-1,2:end-1] .+=  Dᵤ .* Δu .- uvv .+ F * (1 .- u[2:end-1,2:end-1])
+        u[begin+1:end-1,begin+1:end-1] .+=  Dᵤ .* Δu .- uvv .+ F * (1 .- u[begin+1:end-1,begin+1:end-1])
 
-    @views v[2:end-1,2:end-1] .+=  Dᵥ .* Δv .+ uvv .- (F + k) .* v[2:end-1,2:end-1]
-         
+        v[begin+1:end-1,begin+1:end-1] .+=  Dᵥ .* Δv .+ uvv .- (F + k) .* v[begin+1:end-1,begin+1:end-1]
+    end
 end
 ```
 
