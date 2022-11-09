@@ -779,6 +779,7 @@ end
 @time u, v = run_with_ps(500)
 ```
 Takes only 0.3 secs on Tesla v100 
+and 5.87 secs with 16 threads on CPU
 
 ---
 
