@@ -130,7 +130,7 @@ end
 function parallel_deposition( xp, xmin, xmax, nx )
 
     rho = zeros(Float64, nx)
-    rho_local = [copy(rho) for _ in 1:ntid] # allocate an array of arrays for each thread
+    rho_local = [copy(rho) for _ in 1:nthreads()] # allocate an array of arrays for each thread
 
     @sync for chunk in Iterators.partition(1:np, np÷nthreads())
         @spawn begin

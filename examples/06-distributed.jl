@@ -15,14 +15,11 @@
 using Distributed
 using BenchmarkTools
 using Random
-using Test
-rmprocs(workers())
+
+#rmprocs(workers())
 addprocs(4)
-nworkers()
 
 # +
-using Random, Plots, Sobol, BenchmarkTools
-
 nx = 100
 np = 10_000_000
 xmin, xmax = -6, 6
@@ -53,7 +50,7 @@ function distributed_deposition(xp, xmin, xmax, nx)
     np = length(xp)
     rho = SharedArray(zeros(Float64, nx))
     
-    @sync @distributed (+) for i in 1:length(rho)
+    @sync @distributed (+) for i in 1:np
             x_norm = (xp[i]-xmin) / (xmax - xmin)
             ip = trunc(Int,  x_norm * nx)+1
             rho[ip] += 1
@@ -64,13 +61,14 @@ function distributed_deposition(xp, xmin, xmax, nx)
 end
 end
 
-@time distributed_deposition(xp, xmin, xmax, nx);
+t_serial = @belapsed serial_deposition($xp, $xmin, $xmax, $nx);
+t_parallel = @belapsed distributed_deposition($xp, $xmin, $xmax, $nx);
 
+println("efficiency = $(t_serial/(t_parallel * nworkers()) * 100) %")
 # -
 
-@time distributed_deposition(xp, xmin, xmax, nx);
-
-
-workers()
+using Plots
+rho = distributed_deposition(xp, xmin, xmax, nx);
+plot(rho)
 
 

@@ -15,7 +15,7 @@
 # ---
 
 # +
-using Random, Plots, Sobol, BenchmarkTools
+using Random, Plots, BenchmarkTools
 
 nx = 100
 np = 1_000_000
@@ -75,8 +75,9 @@ plot(LinRange(xmin, xmax, nx), parallel_deposition(xp, xmin, xmax, nx), lw = 2)
 plot!(x-> (exp(-x^2/2))/sqrt(2π), -6, 6)
 # -
 
-@btime serial_deposition($xp, $xmin, $xmax, $nx);
+t_serial = @belapsed serial_deposition($xp, $xmin, $xmax, $nx);
 
-@btime parallel_deposition($xp, $xmin, $xmax, $nx);
+t_parallel = @belapsed parallel_deposition($xp, $xmin, $xmax, $nx);
 
+println("efficiency = $(t_serial/(t_parallel * nthreads()) * 100) %")
 
