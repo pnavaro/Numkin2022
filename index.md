@@ -1058,7 +1058,7 @@ end
 ```
 
 
-Takes only 0.3 secs on Tesla v100 
+Takes only 0.3 secs on Tesla v100  and 5.87 secs with 16 threads on CPU
 
 
 ---
