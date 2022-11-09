@@ -67,7 +67,7 @@ Interactive:
 
 
   * No need for third-party visualisation software
-  * Debugging and interactive REPL mode are efficient for development
+  * Debugging and interactive REPL mode are convenient for development
 
 
 ---
