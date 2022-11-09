@@ -23,10 +23,10 @@ Pierre Navaro - IRMAR (Institut de Recherche Mathématique de Rennes)
   * **Julia v1.0** since July 2018
 
 
-https://github.com/JuliaVlasov/Numkin2019
+https://JuliaVlasov.github.io/Numkin2019
 
 
-https://github.com/pnavaro/Numkin2022
+https://pnavaro.github.io/Numkin2022
 
 
 ---
