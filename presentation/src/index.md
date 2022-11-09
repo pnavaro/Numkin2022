@@ -36,7 +36,7 @@ Backend agnostic:
 - Single code to run on various CPUs and GPUs.
 Interactive:
 - No need for third-party visualisation software
-- Debugging and interactive REPL mode are efficient for development
+- Debugging and interactive REPL mode are convenient for development
 
 ---
 
