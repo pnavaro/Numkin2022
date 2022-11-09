@@ -217,11 +217,11 @@ end
 
 t_serial = @belapsed serial_deposition($xp, $xmin, $xmax, $nx);
 t_thread = @belapsed parallel_deposition($xp, $xmin, $xmax, $nx);
-println("$(t_serial / t_thread)")
+println("Efficiency: $(t_serial / (t_thread * nthreads()) * 100) %")
 ```
 
 
-3.12
+Efficiency: 78 %
 
 
 ---
