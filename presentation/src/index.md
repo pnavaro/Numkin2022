@@ -693,7 +693,7 @@ function run_on_gpu( n = 500, maxiter = 10_000)
 
 end
 
-@time u, v = run_on_gpu( 500)
+CUDA.@time u, v = run_on_gpu( 500)
 ```
 
 Takes only 1 sec on Tesla v100 and the speed-up is much better when we raise the number of points.
