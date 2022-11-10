@@ -1,4 +1,4 @@
-[Numkin 2022 - 7-10/11 - Garching, Germany](https://www.ipp.mpg.de/5262872/numkin2022.html)
+[Numkin 2022 - 07-10/11/2022 - Garching, Germany](https://www.ipp.mpg.de/5262872/numkin2022.html)
 
 # Some Julia tools for HPC 
 
