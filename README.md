@@ -1,4 +1,6 @@
-# Julia tools for HPC 
+[Numkin 2022 - 7-10/11 - Garching, Germany](https://www.ipp.mpg.de/5262872/numkin2022.html)
+
+# Some Julia tools for HPC 
 
 For 20 years now I have been working as a research engineer in
 scientific computing on the implementation of numerical methods in
@@ -24,9 +26,8 @@ between the productivity of Python, the performance of Fortran and
 an adaptability to GPU devices. I have been trying for a few years
 to offer these tests in the Julia Vlasov GitHub organization. In
 this talk I will show you some examples of Julia in an HPC oriented
-context with also some interesting packages like Gridap.jl, Trixi.jl,
-PencilArrays.jl, PartitionedArrays.jl, DistributedSparseGrids.jl,
-ParallelStencil.jl...  that can considerably speed up the time for
+context with also some interesting packages like 
+PencilArrays.jl and ParallelStencil.jl that can considerably speed up the time for
 computations but also the development time. The first feedback we
 have with young researchers is extremely positive as it is an
 attractive language with an easy to learn syntax.
