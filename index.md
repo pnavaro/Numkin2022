@@ -1100,7 +1100,7 @@ Takes only 0.3 secs on Tesla v100  and 5.87 secs with 16 threads on CPU
 # See also
 
 
-  * [Julia for HPC](https://enccs.github.io/Julia-for-HPC/)
+  * [Julia for HPC](https://enccs.github.io/julia-for-hpc/)
   * [Video : Julia: Parallel computing revisited](https://www.youtube.com/watch?v=xTLFz-5a5Ec)
   * [Video : Julia programming: HPC topics](https://youtu.be/bXHe7Kj3Xxg)
   * [Julia Day 2022 in Paris](https://calcul.math.cnrs.fr/2022-06-journee-julia-calcul.html)
